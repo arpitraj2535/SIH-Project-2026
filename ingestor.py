@@ -1,33 +1,65 @@
-
-
+import os
 import fitz
 import re
 import uuid
+from dotenv import load_dotenv
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
 
 
+# CONFIG
+
+load_dotenv()
+
 MODEL_NAME = "BAAI/bge-small-en-v1.5"
-COLLECTION = "BIS"
-CHUNK_SIZE = 600
+COLLECTION = "bis_docs"
+
+# ~375 tokens approximately
+CHUNK_SIZE = 1500
+CHUNK_OVERLAP = 200
+
+BATCH_SIZE = 100
 
 
-# Load embedding model once
+# MODELS / QDRANT
+
+
 print("Loading embedding model...")
 model = SentenceTransformer(MODEL_NAME)
 
-# Connect to Qdrant
-client = QdrantClient("localhost", port=6333)
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+if not QDRANT_URL:
+    raise ValueError("QDRANT_URL not found in .env")
+
+if not QDRANT_API_KEY:
+    raise ValueError("QDRANT_API_KEY not found in .env")
+
+print("Connecting to Qdrant Cloud...")
+
+client = QdrantClient(
+    url=QDRANT_URL,
+    api_key=QDRANT_API_KEY
+)
+
+print("Connected to Qdrant Cloud.")
+
+
+# COLLECTION
 
 
 def create_collection():
     """
-    Creates the Qdrant collection if it doesn't exist.
+    Create the BIS document collection if it doesn't exist.
     """
 
-    existing = [c.name for c in client.get_collections().collections]
+    existing = [
+        c.name
+        for c in client.get_collections().collections
+    ]
 
     if COLLECTION in existing:
         print(f"Collection '{COLLECTION}' already exists.")
@@ -44,22 +76,26 @@ def create_collection():
     print(f"Collection '{COLLECTION}' created.")
 
 
+# ============================================================
+# PDF EXTRACTION
+# ============================================================
+
 def extract_pages(pdf_path: str):
     """
-    Extract text from every page of a PDF.
+    Extract text page-by-page from a PDF.
     """
 
     doc = fitz.open(pdf_path)
 
     pages = []
 
-    for i, page in enumerate(doc, start=1):
+    for page_number, page in enumerate(doc, start=1):
 
         text = page.get_text().strip()
 
         if text:
             pages.append({
-                "page_num": i,
+                "page_num": page_number,
                 "text": text
             })
 
@@ -68,24 +104,52 @@ def extract_pages(pdf_path: str):
     return pages
 
 
-def chunk_page(page_text: str, page_num: int, standard_id: str):
-    """
-    Split page text into clause-level chunks.
+# CLAUSE DETECTION
 
-    Each chunk stores:
-    - text
-    - page
+
+def detect_clause(text: str):
+    """
+    Detect clause numbers such as:
+    4.1
+    4.1.2
+    7.15
+    """
+
+    match = re.match(
+        r'^(\d+\.\d+(?:\.\d+)*)',
+        text.strip()
+    )
+
+    if match:
+        return match.group(1)
+
+    return "general"
+
+
+# CHUNKING
+
+
+def chunk_page(
+    page_text: str,
+    page_num: int,
+    doc_id: str,
+    doc_title: str
+):
+    """
+    Split page text into clause-aware chunks.
+
+    Metadata stored with every chunk:
+    - doc_id
+    - doc_title
     - clause
-    - standard_id
+    - page
+    - text
     """
 
     chunks = []
 
-    # Detect clause numbers such as:
-    # 4.1
-    # 4.1.2
-    # 7.15
-    pattern = r'(?=\b\d+\.\d+[\.\d]*\s)'
+    # Detect clause boundaries
+    pattern = r'(?=\b\d+\.\d+(?:\.\d+)*\s)'
 
     parts = re.split(pattern, page_text)
 
@@ -93,68 +157,102 @@ def chunk_page(page_text: str, page_num: int, standard_id: str):
 
         part = part.strip()
 
-        # Ignore tiny fragments
         if len(part) < 60:
             continue
 
-        # Detect clause number
-        clause_match = re.match(
-            r'^(\d+\.\d+[\.\d]*)',
-            part
-        )
+        clause = detect_clause(part)
 
-        clause = (
-            clause_match.group(1)
-            if clause_match
-            else "general"
-        )
+        # Small clause -> keep intact
 
-        # Normal-sized chunk
         if len(part) <= CHUNK_SIZE:
 
             chunks.append({
                 "text": part,
                 "page": page_num,
                 "clause": clause,
-                "standard_id": standard_id
+                "doc_id": doc_id,
+                "doc_title": doc_title,
+                "standard_id": doc_id
             })
 
-        # Large clause → split into smaller chunks
+        # Large clause -> overlapping chunks
+
         else:
 
-            for i in range(0, len(part), CHUNK_SIZE):
+            start = 0
 
-                sub = part[i:i + CHUNK_SIZE].strip()
+            while start < len(part):
 
-                if len(sub) < 60:
-                    continue
+                end = start + CHUNK_SIZE
 
-                chunks.append({
-                    "text": sub,
-                    "page": page_num,
-                    "clause": clause,
-                    "standard_id": standard_id
-                })
+                sub = part[start:end].strip()
+
+                if len(sub) >= 60:
+
+                    chunks.append({
+                        "text": sub,
+                        "page": page_num,
+                        "clause": clause,
+                        "doc_id": doc_id,
+                        "doc_title": doc_title,
+                        "standard_id": doc_id
+                    })
+
+                if end >= len(part):
+                    break
+
+                start = end - CHUNK_OVERLAP
 
     return chunks
 
 
-def ingest_pdf(pdf_path: str, standard_id: str):
+# BATCH UPLOAD
+
+
+def upload_points(points):
+
+    if not points:
+        return
+
+    for i in range(0, len(points), BATCH_SIZE):
+
+        batch = points[i:i + BATCH_SIZE]
+
+        client.upsert(
+            collection_name=COLLECTION,
+            points=batch
+        )
+
+        print(
+            f"   Uploaded {min(i + BATCH_SIZE, len(points))}"
+            f"/{len(points)} chunks"
+        )
+
+
+# INGEST ONE PDF
+
+
+def ingest_pdf(
+    pdf_path: str,
+    doc_id: str,
+    doc_title: str
+):
     """
-    Full ingestion pipeline:
+    Complete ingestion pipeline:
 
     PDF
       ↓
     Page extraction
       ↓
-    Clause chunks
+    Clause-aware chunking
       ↓
-    Embeddings
+    BGE embeddings
       ↓
-    Qdrant
+    Qdrant Cloud
     """
 
     print(f"\nProcessing: {pdf_path}")
+    print(f"Document: {doc_title}")
 
     pages = extract_pages(pdf_path)
 
@@ -165,7 +263,8 @@ def ingest_pdf(pdf_path: str, standard_id: str):
         chunks = chunk_page(
             page["text"],
             page["page_num"],
-            standard_id
+            doc_id,
+            doc_title
         )
 
         for chunk in chunks:
@@ -182,14 +281,13 @@ def ingest_pdf(pdf_path: str, standard_id: str):
                 )
             )
 
-    if points:
+    print(f"   Generated {len(points)} chunks")
 
-        client.upsert(
-            collection_name=COLLECTION,
-            points=points
-        )
+    upload_points(points)
 
     print(
-        f"✅ {standard_id}: "
-        f"ingested {len(points)} chunks"
+        f"✅ {doc_title}: "
+        f"{len(points)} chunks uploaded"
     )
+
+    return len(points)

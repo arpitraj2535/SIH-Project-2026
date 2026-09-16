@@ -1,8 +1,13 @@
-# generator.py
+
 
 import os
 from groq import Groq
 from dotenv import load_dotenv
+
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
 load_dotenv()
 
@@ -16,8 +21,9 @@ client = Groq(api_key=GROQ_API_KEY)
 MODEL_NAME = "openai/gpt-oss-120b"
 
 
-# Build context from retrieved chunks
-
+# ============================================================
+# BUILD CONTEXT
+# ============================================================
 
 def build_context(chunks):
 
@@ -28,6 +34,8 @@ def build_context(chunks):
         context_parts.append(
             f"""
 SOURCE {i}
+
+Document: {chunk["doc_title"]}
 Standard: {chunk["standard_id"]}
 Clause: {chunk["clause"]}
 Page: {chunk["page"]}
@@ -40,8 +48,9 @@ CONTENT:
     return "\n".join(context_parts)
 
 
-# Determine confidence
-
+# ============================================================
+# DETERMINE CONFIDENCE
+# ============================================================
 
 def determine_confidence(chunks):
 
@@ -60,14 +69,19 @@ def determine_confidence(chunks):
         return "red"
 
 
-# Generate answer
-
+# ============================================================
+# GENERATE ANSWER
+# ============================================================
 
 def generate_answer(query, chunks):
 
     if not chunks:
+
         return {
-            "answer": "I don't have sufficient information in my verified BIS knowledge base to answer this question.",
+            "answer": (
+                "I don't have sufficient information in my verified "
+                "BIS knowledge base to answer this question."
+            ),
             "confidence": "red",
             "sources": []
         }
@@ -77,41 +91,140 @@ def generate_answer(query, chunks):
     prompt = f"""
 You are an AI assistant for Indian Standards and BIS services.
 
-Your job is to answer questions ONLY using the provided BIS document context.
+Your job is to answer the user's question using ONLY the
+VERIFIED BIS DOCUMENT CONTEXT provided below.
 
-IMPORTANT RULES:
+You are an evidence-grounded RAG assistant.
 
-1. Do NOT use outside knowledge.
-2. Do NOT invent facts.
-3. Do NOT invent standards.
-4. Do NOT invent clause numbers.
-5. Do NOT invent page numbers.
-6. Every factual claim must have a citation.
-7. Citations MUST use this exact format:
+============================================================
+STRICT EVIDENCE RULES
+============================================================
 
-[StandardID, Clause X.X, Page Y]
+1. Use ONLY information explicitly supported by the provided
+   document context.
 
-8. If a source has no specific clause, use:
+2. Do NOT use outside knowledge, even if you know the answer.
 
-[StandardID, Clause general, Page Y]
+3. Do NOT invent facts, requirements, tests, standards,
+   certifications, procedures, clause numbers, or page numbers.
 
-9. If the provided context does not contain enough information to answer the question, say exactly:
+4. NEVER strengthen a statement beyond what the source says.
 
-I don't have sufficient information in my verified BIS knowledge base to answer this question.
+   For example:
 
-10. Keep the answer concise and useful.
-11. Prefer bullet points when explaining multiple requirements.
-12. Distinguish clearly between requirements, testing, classification, certification, and guidance.
+   Source says:
+   "Copper, Stainless Steel, Aluminium"
 
-VERIFIED BIS CONTEXT:
+   You may say:
+   "The document lists copper, stainless steel and aluminium."
+
+   Do NOT say:
+   "These are the only materials permitted."
+
+   unless the source explicitly says they are the only permitted
+   materials.
+
+5. Do NOT infer that something is mandatory unless the provided
+   context explicitly establishes that it is mandatory.
+
+6. Do NOT infer that something is prohibited unless the provided
+   context explicitly establishes that it is prohibited.
+
+7. Do NOT infer certification requirements from a general mention
+   of BIS certification.
+
+8. Do NOT combine information from different standards as though
+   they belong to one standard.
+
+9. If multiple standards appear in the context, keep their
+   requirements clearly separated.
+
+10. A requirement from Standard A must NEVER be presented as a
+    requirement of Standard B.
+
+11. If the user asks about a specific standard, prioritize evidence
+    belonging to that standard.
+
+12. If the context does not contain enough evidence to answer the
+    question accurately, respond exactly:
+
+    I don't have sufficient information in my verified BIS knowledge base to answer this question.
+
+============================================================
+CITATION RULES
+============================================================
+
+13. Every factual claim must have a citation.
+
+14. Citations MUST use exactly this format:
+
+    [StandardID, Clause X.X, Page Y]
+
+15. If the source has no specific clause, use:
+
+    [StandardID, Clause general, Page Y]
+
+16. Use the StandardID, Clause and Page exactly as provided in the
+    source metadata.
+
+17. NEVER invent or modify a citation.
+
+18. Do not cite a source merely because it is related to the topic.
+    The source must actually support the claim being made.
+
+19. When a statement contains information from two different
+    sources, cite both sources.
+
+============================================================
+ANSWERING STYLE
+============================================================
+
+20. Answer the user's actual question directly.
+
+21. Keep the answer concise.
+
+22. Prefer bullet points for multiple requirements.
+
+23. Do not add unnecessary background information.
+
+24. Clearly distinguish between:
+
+    - Product scope
+    - Requirements
+    - Testing
+    - Sampling
+    - Classification
+    - Certification
+    - Guidance
+    - Labelling / marking
+
+25. If the source only provides partial information, clearly state
+    what the available document does and does not establish.
+
+26. Do not pretend that a Product Manual contains the complete
+    Indian Standard if the context only contains the Product Manual.
+
+27. If a document says "refer to IS XXXXX", do not invent the
+    contents of that referenced standard.
+
+28. If the user asks a question outside the verified BIS knowledge
+    base, use the exact insufficient-information response.
+
+============================================================
+VERIFIED BIS DOCUMENT CONTEXT
+============================================================
 
 {context}
 
-USER QUESTION:
+============================================================
+USER QUESTION
+============================================================
 
 {query}
 
-ANSWER:
+============================================================
+ANSWER
+============================================================
 """
 
     response = client.chat.completions.create(
@@ -119,7 +232,11 @@ ANSWER:
         messages=[
             {
                 "role": "system",
-                "content": "You are a precise BIS standards assistant. Follow the provided evidence strictly."
+                "content": (
+                    "You are a precise, evidence-grounded BIS "
+                    "standards assistant. Never go beyond the "
+                    "provided evidence."
+                )
             },
             {
                 "role": "user",
@@ -134,14 +251,27 @@ ANSWER:
 
     confidence = determine_confidence(chunks)
 
+    citations = [
+        {
+            "standard": chunk["standard_id"],
+            "clause": chunk["clause"],
+            "page": chunk["page"],
+            "text": chunk["text"]
+        }
+        for chunk in chunks
+    ]
+
     return {
         "answer": answer,
         "confidence": confidence,
-        "sources": chunks
+        "sources": chunks,
+        "citations": citations
     }
 
 
-# Standalone test
+# ============================================================
+# STANDALONE TEST
+# ============================================================
 
 if __name__ == "__main__":
 

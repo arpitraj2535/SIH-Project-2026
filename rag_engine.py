@@ -23,10 +23,10 @@ def ask(query: str, top_k: int = 5) -> dict:
 if __name__ == "__main__":
 
     test_queries = [
-        "What is IS 17526 about?",
-        "What are the requirements for stainless steel vacuum bottles?",
-        "What is IS 17803 about?",
-        "What is the purpose of BIS certification?",
+        "I manufacture stainless steel vacuum bottles. What BIS standard applies to my product?",
+        "What are the capacity groups for domestic stainless steel vacuum flasks?",
+        "I want to get BIS certification for my stainless steel vacuum flask. How many samples do I need to submit for testing?",
+        "What materials can I use to make a metallic water bottle if I want it to comply with BIS requirements?",
         "What is the capital of France?"
     ]
 
