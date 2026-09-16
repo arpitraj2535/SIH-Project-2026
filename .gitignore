@@ -1,0 +1,59 @@
+# ==============================
+# Python
+# ==============================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==============================
+# Virtual Environment
+# ==============================
+
+venv/
+.venv/
+env/
+
+# ==============================
+# Environment / Secrets
+# ==============================
+
+.env
+.env.*
+!.env.example
+
+#
+# BIS Standards / Private PDFs
+#
+
+Standards/
+standards/
+
+*.pdf
+
+
+# Qdrant / Local Data
+
+
+qdrant_storage/
+storage/
+
+
+# IDE / Editor
+
+
+.vscode/
+.idea/
+
+
+# OS Files
+
+
+.DS_Store
+Thumbs.db
+
+
+# Logs
+
+
+*.log
