@@ -1,7 +1,10 @@
+import os
 import requests
+from dotenv import load_dotenv
 
+load_dotenv()
 
-RAG_API_URL = "http://192.168.1.10:8000/ask"
+RAG_API_URL = os.getenv("RAG_API_URL")
 
 
 def ask_rag(query: str) -> dict:
