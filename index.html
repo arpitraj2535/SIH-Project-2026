@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">  <!-- used to make us use emojis -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BIS Saarthi</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Markdown library used to make the browser read the decorated text when backend send the response -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+</head>
+
+
+<body>
+
+    <div class="app">
+
+
+        <!-- ================= SIDEBAR ================= -->
+
+        <aside class="sidebar"> <!-- aside is the semantic tage in html used for secondary information that is related to the main content -->
+
+
+            <!-- Logo -->
+
+            <div class="brand">
+
+                <img
+                    src="images/logo.png"
+                    alt="BIS Logo"
+                >
+
+                <div class="brand-text">
+
+                    <h2>BIS Saarthi</h2>
+
+                    <p>
+                        Your AI Assistant for<br>
+                        Indian Standards & BIS Services
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- New Chat -->
+
+            <button
+                class="new-chat"
+                id="new-chat-btn"
+            >
+
+                <span>＋</span> <!-- span take the size needed for the element -->
+
+                New Chat
+
+            </button>
+
+
+            <!-- Menu -->
+
+            <div class="menu">
+
+
+                <div
+                    class="menu-item active"
+                    id="home-btn"
+                >
+
+                    <span>⌂</span>
+
+                    Home
+
+                </div>
+
+
+                <div
+                    class="menu-item"
+                    id="standards-btn"
+                >
+
+                    <span>⌕</span>
+
+                    Find Standards
+
+                </div>
+
+
+                <div
+                    class="menu-item"
+                    id="certification-btn"
+                >
+
+                    <span>▣</span>
+
+                    Certification Guide
+
+                </div>
+
+
+                <div
+                    class="menu-item"
+                    id="laboratory-btn"
+                >
+
+                    <span>⚗</span>
+
+                    Laboratory Finder
+
+                </div>
+
+
+            </div>
+
+
+            <!-- Recent Chats -->
+
+            <div class="recent-section">
+
+                <h3>Recent Chats</h3>
+
+                <div id="recent-chats"></div> <!-- js will fill this -->
+
+
+            </div>
+
+
+            <!-- Settings -->
+
+            <div class="sidebar-bottom">
+
+                <div
+                    class="menu-item"
+                    id="settings-btn"
+                >
+
+                    <span>⚙</span>
+
+                    Settings
+
+                </div>
+
+            </div>
+
+
+        </aside>
+
+
+
+        <!-- ================= MAIN CONTENT ================= -->
+
+        <main class="main-content"> <!-- main is the semantic tag used to represent the main content -->
+
+
+            <!-- Header -->
+
+            <header class="header">
+
+                <div>
+
+                    <h1>BIS Saarthi</h1>
+
+                    <p>
+                        Ask anything about Indian Standards and BIS services...
+                    </p>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- Chat Wrapper -->
+
+            <div class="chat-wrapper">
+
+
+                <!-- Chat Area -->
+
+<!-- this is where the chat will appear  --><div
+                    class="chat-area"  
+                    id="chat-area"
+                >
+
+
+                    <!-- Welcome -->
+
+                    <div class="welcome-message">
+
+                        <h1>
+                            👋 Welcome to BIS Saarthi
+                        </h1>
+
+                        <p>
+
+                            Ask me anything about BIS Standards,
+                            Certification, Testing Laboratories,
+                            or Quality Regulations.
+
+                        </p>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- Input -->
+
+                <div class="input-container">
+
+
+                    <div class="input-box">
+
+
+                        <input
+                            type="text"
+                            id="user-input"
+                            placeholder="Ask about Indian Standards, BIS services..."
+                            autocomplete="off"
+                        >
+
+
+                        <button id="send-btn">
+                            ➤
+                        </button>
+
+
+                    </div>
+
+
+                    <div class="input-footer">
+
+                        BIS Saarthi can make mistakes.
+                        Please verify important information.
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        </main>
+
+
+
+        <!-- ================= RIGHT PANEL ================= -->
+
+        <aside class="right-panel">
+
+
+            <!-- Applicable Standards -->
+
+            <div class="info-card">
+
+                <h2>
+                    Applicable Standards
+                </h2>
+
+                <p class="small-text">
+
+                    Standards identified from your query
+
+                </p>
+
+
+                <div id="standards-panel">
+
+                    <div class="empty-panel">
+
+                        Ask a question to see
+                        applicable standards.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Certification Scheme -->
+
+            <div class="info-card">
+
+                <h2>
+                    Certification Scheme
+                </h2>
+
+
+                <div id="certification-panel">
+
+                    <div class="empty-panel">
+
+                        Certification information
+                        will appear here.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Sources -->
+
+            <div class="info-card">
+
+                <h2>
+                    Sources
+                </h2>
+
+
+                <div id="sources-panel">
+
+                    <div class="empty-panel">
+
+                        Sources will appear
+                        after the AI response.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </aside>
+
+
+    </div>
+
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
