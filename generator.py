@@ -265,6 +265,7 @@ ANSWER
         "answer": answer,
         "confidence": confidence,
         "sources": chunks,
+
         "citations": citations
     }
 

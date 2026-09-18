@@ -1,5 +1,8 @@
 import os
 import re
+import time
+import threading
+from collections import deque
 
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
@@ -8,7 +11,7 @@ from qdrant_client.models import (
     FieldCondition,
     MatchValue
 )
-from sentence_transformers import SentenceTransformer
+import voyageai
 
 
 # ============================================================
@@ -17,19 +20,127 @@ from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
-COLLECTION = "bis_docs"
+MODEL_NAME = "voyage-4-lite"
+COLLECTION = "bis_docs_voyage_final"
 
 TOP_K = 5
 SCORE_THRESHOLD = 0.45
 
+# Voyage account-specific free-tier limit:
+# 3 requests per minute.
+VOYAGE_MAX_REQUESTS = 3
+VOYAGE_COOLDOWN = 65
+
 
 # ============================================================
-# LOAD MODEL
+# VOYAGE RATE LIMITER
 # ============================================================
 
-print("Loading embedding model...")
-model = SentenceTransformer(MODEL_NAME)
+_voyage_request_times = deque()
+_voyage_lock = threading.Lock()
+_voyage_cooldown_until = 0.0
+
+HIGH_DEMAND_MESSAGE = (
+    "\n⏳ High demand right now — our BIS knowledge engine is "
+    "handling several requests. Please give us about a minute "
+    "while we prepare your answer. Thank you for your patience! ❤️\n"
+)
+
+
+def wait_for_voyage_slot():
+    """
+    Enforce the current Voyage free-tier limit locally.
+
+    After 3 successful embedding requests, wait 65 seconds before
+    allowing another request. This prevents the application from
+    repeatedly hitting Voyage's 3 RPM limit.
+    """
+
+    global _voyage_cooldown_until
+
+    with _voyage_lock:
+
+        now = time.monotonic()
+
+        # If we are already in the post-3-request cooldown,
+        # wait until the cooldown has finished.
+        if now < _voyage_cooldown_until:
+            wait_seconds = _voyage_cooldown_until - now
+
+            print(HIGH_DEMAND_MESSAGE)
+            print(
+                f"Waiting {wait_seconds:.0f} seconds for "
+                "the embedding service to become available..."
+            )
+
+            time.sleep(wait_seconds)
+
+            now = time.monotonic()
+
+        # Remove timestamps older than one minute.
+        while (
+            _voyage_request_times
+            and now - _voyage_request_times[0] >= 60
+        ):
+            _voyage_request_times.popleft()
+
+        # If 3 requests have been made inside the current
+        # rolling minute, wait for the required cooldown.
+        if len(_voyage_request_times) >= VOYAGE_MAX_REQUESTS:
+
+            print(HIGH_DEMAND_MESSAGE)
+
+            wait_seconds = VOYAGE_COOLDOWN
+
+            print(
+                f"Waiting {wait_seconds} seconds before "
+                "sending the next query..."
+            )
+
+            time.sleep(wait_seconds)
+
+            _voyage_request_times.clear()
+            _voyage_cooldown_until = 0.0
+
+
+def record_voyage_request():
+    """
+    Record a successful Voyage embedding request.
+
+    Once three requests have completed, start a 65-second
+    cooldown for the next request.
+    """
+
+    global _voyage_cooldown_until
+
+    with _voyage_lock:
+
+        _voyage_request_times.append(time.monotonic())
+
+        if len(_voyage_request_times) >= VOYAGE_MAX_REQUESTS:
+            _voyage_cooldown_until = (
+                time.monotonic() + VOYAGE_COOLDOWN
+            )
+
+
+# ============================================================
+# VOYAGE AI
+# ============================================================
+
+VOYAGE_API_KEY = os.getenv("VOYAGE_API_KEY")
+
+if not VOYAGE_API_KEY:
+    raise ValueError("VOYAGE_API_KEY not found in .env")
+
+print("Connecting to Voyage AI...")
+
+voyage_client = voyageai.Client(
+    api_key=VOYAGE_API_KEY,
+    max_retries=0,
+    timeout=120
+)
+
+print("Connected to Voyage AI.")
 
 
 # ============================================================
@@ -50,7 +161,8 @@ print("Connecting to Qdrant Cloud...")
 
 client = QdrantClient(
     url=QDRANT_URL,
-    api_key=QDRANT_API_KEY
+    api_key=QDRANT_API_KEY,
+    timeout=60
 )
 
 print("Connected to Qdrant Cloud.")
@@ -153,23 +265,67 @@ STANDARD_MAP = {
 
 
 # ============================================================
+# VOYAGE QUERY EMBEDDING
+# ============================================================
+
+def embed_query(query: str):
+    """
+    Create a Voyage-4-lite query embedding while respecting
+    the current 3-RPM account limit.
+    """
+
+    wait_for_voyage_slot()
+
+    try:
+        response = voyage_client.embed(
+            [query],
+            model=MODEL_NAME,
+            input_type="query"
+        )
+
+    except Exception as exc:
+
+        # If the provider still returns a rate-limit response
+        # despite our local limiter, wait and retry once.
+        if (
+            "RateLimit" in type(exc).__name__
+            or "rate limit" in str(exc).lower()
+            or "3 RPM" in str(exc)
+        ):
+
+            print(HIGH_DEMAND_MESSAGE)
+            print(
+                f"Voyage rate limit reached. "
+                f"Waiting {VOYAGE_COOLDOWN} seconds and retrying..."
+            )
+
+            time.sleep(VOYAGE_COOLDOWN)
+
+            response = voyage_client.embed(
+                [query],
+                model=MODEL_NAME,
+                input_type="query"
+            )
+
+        else:
+            raise
+
+    record_voyage_request()
+
+    return response.embeddings[0]
+
+
+# ============================================================
 # RETRIEVE
 # ============================================================
 
 def retrieve(query: str, top_k: int = TOP_K):
 
     # --------------------------------------------------------
-    # BGE QUERY EMBEDDING
+    # VOYAGE QUERY EMBEDDING
     # --------------------------------------------------------
 
-    query_text = (
-        "Represent this sentence for searching relevant passages: "
-        + query
-    )
-
-    query_embedding = model.encode(
-        query_text
-    ).tolist()
+    query_embedding = embed_query(query)
 
     # --------------------------------------------------------
     # DETECT EXPLICIT STANDARD
@@ -193,7 +349,9 @@ def retrieve(query: str, top_k: int = TOP_K):
                 must=[
                     FieldCondition(
                         key="standard_id",
-                        match=MatchValue(value=document_ids[0])
+                        match=MatchValue(
+                            value=document_ids[0]
+                        )
                     )
                 ]
             )
@@ -309,6 +467,10 @@ def retrieve(query: str, top_k: int = TOP_K):
         key=lambda x: x["_boosted_score"],
         reverse=True
     )
+
+    # --------------------------------------------------------
+    # RETURN TOP RESULTS
+    # --------------------------------------------------------
 
     retrieved_chunks = []
 
