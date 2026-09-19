@@ -43,8 +43,13 @@ const certificationPanel = document.getElementById("certification-panel");
 // Find the place where sources will be displayed
 const sourcesPanel = document.getElementById("sources-panel");
 
+//for collapse of the sidebar
+const collapseBtn = document.getElementById("collapse-btn");
+const sidebar = document.querySelector(".sidebar");
+
+
 // Store the backend URL in one variable
-const API_URL = "http://192.168.1.6:8000/api/chat";
+const API_URL = "https://bis-smartassist-backend.onrender.com/api/chat";
 
 
 /* =====================================================
@@ -2427,3 +2432,8 @@ laboratoryBtn.addEventListener(
 
     }
 );
+
+//for collapse
+collapseBtn.addEventListener("click", function () {
+    sidebar.classList.toggle("collapsed");
+});

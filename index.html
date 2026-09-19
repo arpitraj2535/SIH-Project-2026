@@ -3,7 +3,7 @@
 
 <head>
 
-    <meta charset="UTF-8">  <!-- used to make us use emojis -->
+    <meta charset="UTF-8"> <!-- used to make us use emojis -->
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -24,17 +24,18 @@
 
         <!-- ================= SIDEBAR ================= -->
 
-        <aside class="sidebar"> <!-- aside is the semantic tage in html used for secondary information that is related to the main content -->
+        <aside class="sidebar">
+            <!-- aside is the semantic tage in html used for secondary information that is related to the main content -->
 
+            <button id="collapse-btn" class="collapse-btn">
+                ☰
+            </button>
 
             <!-- Logo -->
 
             <div class="brand">
 
-                <img
-                    src="images/logo.png"
-                    alt="BIS Logo"
-                >
+                <img src="images/logo.png" alt="BIS Logo">
 
                 <div class="brand-text">
 
@@ -52,10 +53,7 @@
 
             <!-- New Chat -->
 
-            <button
-                class="new-chat"
-                id="new-chat-btn"
-            >
+            <button class="new-chat" id="new-chat-btn">
 
                 <span>＋</span> <!-- span take the size needed for the element -->
 
@@ -69,10 +67,7 @@
             <div class="menu">
 
 
-                <div
-                    class="menu-item active"
-                    id="home-btn"
-                >
+                <div class="menu-item active" id="home-btn">
 
                     <span>⌂</span>
 
@@ -81,10 +76,7 @@
                 </div>
 
 
-                <div
-                    class="menu-item"
-                    id="standards-btn"
-                >
+                <div class="menu-item" id="standards-btn">
 
                     <span>⌕</span>
 
@@ -93,10 +85,7 @@
                 </div>
 
 
-                <div
-                    class="menu-item"
-                    id="certification-btn"
-                >
+                <div class="menu-item" id="certification-btn">
 
                     <span>▣</span>
 
@@ -105,10 +94,7 @@
                 </div>
 
 
-                <div
-                    class="menu-item"
-                    id="laboratory-btn"
-                >
+                <div class="menu-item" id="laboratory-btn">
 
                     <span>⚗</span>
 
@@ -136,10 +122,7 @@
 
             <div class="sidebar-bottom">
 
-                <div
-                    class="menu-item"
-                    id="settings-btn"
-                >
+                <div class="menu-item" id="settings-btn">
 
                     <span>⚙</span>
 
@@ -184,10 +167,8 @@
 
                 <!-- Chat Area -->
 
-<!-- this is where the chat will appear  --><div
-                    class="chat-area"  
-                    id="chat-area"
-                >
+                <!-- this is where the chat will appear  -->
+                <div class="chat-area" id="chat-area">
 
 
                     <!-- Welcome -->
@@ -221,12 +202,8 @@
                     <div class="input-box">
 
 
-                        <input
-                            type="text"
-                            id="user-input"
-                            placeholder="Ask about Indian Standards, BIS services..."
-                            autocomplete="off"
-                        >
+                        <input type="text" id="user-input" placeholder="Ask about Indian Standards, BIS services..."
+                            autocomplete="off">
 
 
                         <button id="send-btn">
