@@ -12,6 +12,7 @@ cursor.execute("""
     )
 """)
 
+
 connection.commit()
 
 cursor.close()
