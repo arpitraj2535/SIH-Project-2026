@@ -8,6 +8,8 @@ from routes.chat import router
 app = FastAPI(title="BIS SmartAssist API")
 origins = [
     "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "https://sih-project-2026-nine.vercel.app",
 ]
 
 app.add_middleware(
