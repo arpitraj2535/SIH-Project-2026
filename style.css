@@ -300,58 +300,131 @@ body {
     }
 
 
-    /* =========================
+/* =========================
    CHAT
 ========================= */
 
-    .chat-wrapper {
-        flex: 1;
-
-        min-height: 0;
-
-        display: flex;
-
-        flex-direction: column;
-    }
+.chat-wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
 
 
-    .chat-area {
-        flex: 1;
-
-        overflow-y: auto;
-        /* it gives the scrollbar */
-
-        padding: 35px 45px;
-    }
-
-
-    /* =========================
-   WELCOME
+/* =========================
+   CHAT AREA
 ========================= */
 
-    .welcome-message {
-        text-align: center;
+.chat-area {
+    flex: 1;
 
-        margin-top: 60px;
-    }
+    /* Gives the chat area a scrollbar when needed */
+    overflow-y: auto;
+
+    /* Space inside the chat area */
+    padding: 35px 45px;
+
+    /*
+       Allows the BIS logo to be positioned
+       inside this chat area.
+    */
+    position: relative;
+}
 
 
-    .welcome-message h1 {
-        font-size: 38px;
+/* =========================================================
+   BIS LOGO WATERMARK
+   ========================================================= */
 
-        color: #1e293b;
-    }
+/*
+   This creates the BIS logo behind
+   the Welcome to BIS Saarthi message.
+*/
+.chat-area::before {
+
+    /* Required for ::before */
+    content: "";
+
+    /* Your BIS logo */
+    background-image: url("images/logo.png");
+
+    /* Don't repeat the logo */
+    background-repeat: no-repeat;
+
+    /* Keep the logo in the center */
+    background-position: center;
+
+    /* Make the logo large */
+    background-size: 550px;
+
+    /*
+       Make the logo very faint.
+
+       0 = invisible
+       1 = fully visible
+    */
+    opacity: 0.06;
+
+    /* Position the logo */
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    /*
+       Move the logo back by half of itself
+       so it is exactly centered.
+    */
+    transform: translate(-50%, -50%);
+
+    /* Logo size */
+    width: 550px;
+    height: 550px;
+
+    /*
+       Don't let the logo block
+       mouse clicks or typing.
+    */
+    pointer-events: none;
+
+    /*
+       Keep the logo behind
+       the actual chat content.
+    */
+    z-index: 0;
+}
 
 
-    .welcome-message p {
-        margin-top: 15px;
+/* =========================================================
+   WELCOME MESSAGE
+   ========================================================= */
 
-        color: #64748b;
+/*
+   Keep the Welcome message above
+   the BIS logo.
+*/
+.welcome-message {
+    position: relative;
+    z-index: 1;
 
-        font-size: 16px;
+    text-align: center;
+    margin-top: 60px;
+}
 
-        line-height: 1.6;
-    }
+
+.welcome-message h1 {
+    font-size: 38px;
+    color: #1e293b;
+}
+
+
+.welcome-message p {
+    margin-top: 15px;
+    color: #64748b;
+    font-size: 16px;
+    line-height: 1.6;
+}
 
 
     /* =========================
@@ -1132,10 +1205,27 @@ body {
     }
 
 
-    /* =========================
-   RESPONSIVE
-========================= */
+    /* =========================================================
+       MOBILE MENU BUTTON
+       ========================================================= */
 
+    /*
+       Hidden on laptop/desktop.
+       It will be shown only on mobile.
+    */
+    .mobile-menu-btn {
+        display: none;
+    }
+
+
+    /* =========================================================
+       RESPONSIVE
+       ========================================================= */
+
+    /*
+       At 1100px or below:
+       Hide the right information panel to make more space.
+    */
     @media (max-width: 1100px) {
 
         .right-panel {
@@ -1145,36 +1235,36 @@ body {
     }
 
 
+    /*
+       At 750px or below:
+       Adjust the main content for smaller screens.
+    */
     @media (max-width: 750px) {
 
-        .sidebar {
-            width: 220px;
+        .main-content {
+            width: 100%;
         }
 
         .header {
-            padding: 18px;
+            height: auto;
+            padding: 16px 18px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+        }
+
+        .header p {
+            font-size: 13px;
         }
 
         .chat-area {
-            padding: 20px;
-        }
-
-        .bot-message,
-        .user-message {
-            max-width: 90%;
-        }
-
-    }
-
-
-    @media (max-width: 600px) {
-
-        .sidebar {
-            display: none;
+            padding: 20px 15px;
         }
 
         .welcome-message {
             margin-top: 30px;
+            padding: 0 10px;
         }
 
         .welcome-message h1 {
@@ -1182,21 +1272,161 @@ body {
         }
 
         .welcome-message p {
-            font-size: 16px;
+            font-size: 14px;
+        }
+
+        .bot-message,
+        .user-message {
+            max-width: 92%;
+        }
+
+        .bot-message {
+            padding: 15px;
         }
 
         .input-container {
             padding: 10px;
         }
 
-        .feature-page {
-            margin: 15px auto;
+        .input-box input {
+            font-size: 14px;
+        }
 
+    }
+
+
+    /*
+       =========================================================
+       MOBILE PHONE
+       =========================================================
+
+       At 600px or below:
+       - Hide the blue desktop collapse button.
+       - Show the grey mobile menu button.
+       - Turn the sidebar into a slide-out menu.
+    */
+    @media (max-width: 600px) {
+
+        /*
+           GREY MOBILE ☰ BUTTON
+           Hidden by default, shown on mobile.
+        */
+        .mobile-menu-btn {
+            display: block;
+
+            position: fixed;
+            top: 15px;
+            left: 15px;
+
+            z-index: 2000;
+
+            padding: 8px 12px;
+
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+
+        /*
+           BLUE DESKTOP ☰ BUTTON
+           Hidden on mobile.
+        */
+        .collapse-btn {
+            display: none;
+        }
+
+
+        /*
+           MOBILE SIDEBAR
+           Start outside the screen on the left.
+        */
+        .sidebar {
+            position: fixed;
+            left: -300px;
+            top: 0;
+
+            width: 300px;
+            height: 100vh;
+
+            z-index: 1500;
+
+            transition: left 0.3s ease;
+        }
+
+
+        /*
+           JavaScript adds "mobile-open" when the
+           grey mobile button is clicked.
+
+           This moves the sidebar into the screen.
+        */
+        .sidebar.mobile-open {
+            left: 0;
+        }
+
+
+        .chat-area {
+            padding: 15px 10px;
+        }
+
+        .welcome-message {
+            margin-top: 25px;
+        }
+
+        .welcome-message h1 {
+            font-size: 25px;
+        }
+
+        .welcome-message p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .bot-message,
+        .user-message {
+            max-width: 95%;
+        }
+
+        .bot-message {
+            padding: 14px;
+        }
+
+        .user-message {
+            padding: 12px 14px;
+        }
+
+        .input-container {
+            padding: 8px;
+        }
+
+        .input-box {
+            padding: 6px;
+        }
+
+        .input-box input {
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .input-box button {
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+        }
+
+        .feature-page {
+            width: 100%;
+            margin: 15px auto;
             padding: 10px;
         }
 
         .feature-search {
             flex-direction: column;
+            width: 100%;
         }
 
         .guide-grid {
@@ -1204,60 +1434,86 @@ body {
         }
 
     }
-}
 
-/* Sidebar Collapse */
 
-.sidebar {
-    transition: width 0.3s ease;
-}
+    /* =========================================================
+       SIDEBAR COLLAPSE - LAPTOP / DESKTOP
+       ========================================================= */
 
-.sidebar.collapsed {
-    width: 80px;
-}
+    /*
+       Smooth animation when the desktop sidebar changes width.
+    */
+    .sidebar {
+        transition: width 0.3s ease;
+    }
 
-/* Hide brand text */
-.sidebar.collapsed .brand-text {
-    display: none;
-}
 
-/* Center logo */
-.sidebar.collapsed .brand {
-    justify-content: center;
-}
+    /*
+       When the BLUE desktop ☰ button is clicked,
+       JavaScript adds the "collapsed" class.
 
-/* Hide New Chat text but keep + */
-.sidebar.collapsed .new-chat {
-    font-size: 0;
-}
+       The sidebar becomes narrow.
+    */
+    .sidebar.collapsed {
+        width: 80px;
+    }
 
-.sidebar.collapsed .new-chat span {
-    font-size: 20px;
-}
 
-/* Collapse menu text */
-.sidebar.collapsed .menu-item {
-    justify-content: center;
-    font-size: 0;
-    padding: 15px 0;
-}
+    /* Hide BIS Saarthi text when collapsed */
+    .sidebar.collapsed .brand-text {
+        display: none;
+    }
 
-.sidebar.collapsed .menu-item span {
-    font-size: 18px;
-}
 
-/* Hide recent chat section */
-.sidebar.collapsed .recent-section {
-    display: none;
-}
+    /* Center the BIS logo */
+    .sidebar.collapsed .brand {
+        justify-content: center;
+    }
 
-/* Collapse button */
-.collapse-btn {
-    margin: 0 0 15px 0;
-    padding: 8px;
-    background: transparent;
-    color: #2563eb;
-    border: none;
-    font-size: 22px;
-    cursor: pointer;
+
+    /* Hide New Chat text but keep the + icon */
+    .sidebar.collapsed .new-chat {
+        font-size: 0;
+    }
+
+    .sidebar.collapsed .new-chat span {
+        font-size: 20px;
+    }
+
+
+    /* Center menu icons and hide menu text */
+    .sidebar.collapsed .menu-item {
+        justify-content: center;
+        font-size: 0;
+        padding: 15px 0;
+    }
+
+    .sidebar.collapsed .menu-item span {
+        font-size: 18px;
+    }
+
+
+    /* Hide recent chats when collapsed */
+    .sidebar.collapsed .recent-section {
+        display: none;
+    }
+
+
+    /*
+       BLUE DESKTOP COLLAPSE BUTTON
+       This is the button used on laptop/desktop.
+    */
+    .collapse-btn {
+        margin: 0 0 15px 0;
+        padding: 8px;
+
+        background: transparent;
+        color: #2563eb;
+
+        border: none;
+
+        font-size: 22px;
+        cursor: pointer;
+    }
+
 }

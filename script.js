@@ -47,6 +47,10 @@ const sourcesPanel = document.getElementById("sources-panel");
 const collapseBtn = document.getElementById("collapse-btn");
 const sidebar = document.querySelector(".sidebar");
 
+//for mobile
+const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+
+
 
 // Store the backend URL in one variable
 const API_URL = "https://bis-smartassist-backend.onrender.com/api/chat";
@@ -328,9 +332,9 @@ function displaySavedChat(chat) {
             <div class="answer">
 
                 ${
-                    // Convert Markdown answer into HTML
-                    marked.parse(chat.answer)
-                }
+            // Convert Markdown answer into HTML
+            marked.parse(chat.answer)
+            }
 
             </div>
 
@@ -415,120 +419,50 @@ function displaySavedChat(chat) {
 }
 
 
-/* =====================================================
-   CONFIDENCE
-===================================================== */
+// =========================================================
+// CONFIDENCE
+// =========================================================
 
-// This function creates the HTML
-// for showing the confidence value
+// Creates the confidence display
+function createConfidenceHTML(confidence) {
 
-function createConfidenceHTML(
-    confidence  // confidence is the input for the function
-) {
+    // Default values
+    let icon = "⚪";
+    let label = "Unknown";
 
-    // Convert confidence into a number
-
-    let value =
-        Number(confidence);
-
-
-    // If backend gives confidence like 0.85,
-    // convert it into 85
-
-    if (value <= 1) {
-
-        value =
-            value * 100;
-
+    // Green = High Confidence
+    if (confidence === "green") {
+        icon = "🟢";
+        label = "High Confidence";
     }
 
-
-    // Round the number
-
-    value =
-        Math.round(value);
-
-
-    // Keep the value between 0 and 100
-
-    value =
-        Math.max(  //.max will chose the maximum number
-            0,
-            Math.min( //.min will chose the minimum number
-                100,
-                value
-            )
-        );
-
-
-    // Start with Low confidence
-
-    let label =
-        "Low";
-
-
-    // If value is 75 or more,
-    // change label to High
-
-    if (value >= 75) {
-
-        label =
-            "High";
-
+    // Yellow = Medium Confidence
+    else if (confidence === "yellow") {
+        icon = "🟡";
+        label = "Medium Confidence";
     }
 
-
-    // If value is 50 or more,
-    // change label to Medium
-
-    else if (value >= 50) {
-
-        label =
-            "Medium";
-
+    // Red = Low Confidence
+    else if (confidence === "red") {
+        icon = "🔴";
+        label = "Low Confidence";
     }
-
-
-    // Return the HTML for confidence display
-    //return will send the value back to the function, when the function is called createConfidenceHTML()
-    //${label} and ${value} are JavaScript values inserted into the HTML.
-    //style="width: ${value}%" this will fill the value% of the bar(jitna % value hoga)
 
     return `
-
         <div class="confidence-box">
-
             <div class="confidence-header">
 
                 <span class="confidence-label">
-
-                    🟢 Confidence
-
+                    ${icon} Confidence
                 </span>
-
 
                 <span class="confidence-value">
-
-                    ${label} · ${value}%
-
+                    ${label}
                 </span>
 
             </div>
-
-
-            <div class="confidence-bar">
-
-                <div
-                    class="confidence-fill"
-                    style="width: ${value}%"
-                ></div>
-
-            </div>
-
         </div>
-
     `;
-
 }
 
 
@@ -617,23 +551,20 @@ function createSourcesHTML(
 
                     <div class="source-details">
 
-                        ${
-                            clause
-                                ? `Clause ${clause}`  // this is a short if else if there is clause then show if not then empty string
-                                : ""
-                        }
+                        ${clause
+                    ? `Clause ${clause}`  // this is a short if else if there is clause then show if not then empty string
+                    : ""
+                }
 
-                        ${
-                            clause && page
-                                ? " • "   // show • only when clause and page both exist
-                                : ""
-                        }
+                        ${clause && page
+                    ? " • "   // show • only when clause and page both exist
+                    : ""
+                }
 
-                        ${
-                            page
-                                ? `Page ${page}`  // short if else
-                                : ""
-                        }
+                        ${page
+                    ? `Page ${page}`  // short if else
+                    : ""
+                }
 
                     </div>
 
@@ -660,7 +591,7 @@ function createSourcesHTML(
 
 function createActionButtonsHTML() {
 
-    // Add Copy, Like and Dislike buttons
+    // Add Copy button
 
     return `
 
@@ -674,26 +605,6 @@ function createActionButtonsHTML() {
                 📋 Copy
 
             </button>
-
-
-            <button
-                class="message-action"
-            >
-
-                👍
-
-            </button>
-
-
-            <button
-                class="message-action"
-            >
-
-                👎
-
-            </button>
-
-        </div>
 
     `;
 
@@ -906,9 +817,9 @@ async function sendMessage() {
             <div class="answer">
 
                 ${
-                    // Convert Markdown answer into HTML
-                    marked.parse(answer)
-                }
+            // Convert Markdown answer into HTML
+            marked.parse(answer)
+            }
 
             </div>
 
@@ -977,7 +888,7 @@ async function sendMessage() {
             createActionButtonsHTML();
 
 
-        
+
 
         // Replace the loading message
         // with the actual AI answer, this will display the answer
@@ -1357,14 +1268,14 @@ function updateRightPanel(
                     <h3>
 
                         ${
-                            // Show standard name
-                            // or standard number
-                            // or default text
+                    // Show standard name
+                    // or standard number
+                    // or default text
 
-                            standard.name ||
-                            standard.standard ||
-                            "BIS Standard"
-                        }
+                    standard.name ||
+                    standard.standard ||
+                    "BIS Standard"
+                    }
 
                     </h3>
 
@@ -1372,24 +1283,24 @@ function updateRightPanel(
                     <p>
 
                         ${
-                            // Show standard description
-                            // if available
+                    // Show standard description
+                    // if available
 
-                            standard.description ||
-                            ""
-                        }
+                    standard.description ||
+                    ""
+                    }
 
                     </p>
 
 
                     ${
-                        // If this is the first standard,
-                        // show "Most Relevant"
-                        //If index === 0 is true, show "Most Relevant".
-                        //Otherwise, show nothing.
+                    // If this is the first standard,
+                    // show "Most Relevant"
+                    //If index === 0 is true, show "Most Relevant".
+                    //Otherwise, show nothing.
 
-                        index === 0
-                            ? `
+                    index === 0
+                        ? `
 
                                 <span class="relevant-badge">
 
@@ -1399,7 +1310,7 @@ function updateRightPanel(
 
                               `
 
-                            : ""
+                        : ""
 
                     }
 
@@ -1449,14 +1360,14 @@ function updateRightPanel(
             <strong>
 
                 ${
-                    // Show certification name
-                    // or scheme name
+            // Show certification name
+            // or scheme name
 
-                    certification.name ||
-                    certification.scheme ||
-                    certification
+            certification.name ||
+            certification.scheme ||
+            certification
 
-                }
+            }
 
             </strong>
 
@@ -1570,14 +1481,14 @@ function updateRightPanel(
 
                     <a
                         href="${
-                            // Use source URL
-                            // or source_url
-                            // or "#" if unavailable
+                    // Use source URL
+                    // or source_url
+                    // or "#" if unavailable
 
-                            source.url ||
-                            source.source_url ||
-                            "#"
-                        }"
+                    source.url ||
+                    source.source_url ||
+                    "#"
+                    }"
 
                         target="_blank"
 
@@ -1585,13 +1496,13 @@ function updateRightPanel(
                     >
 
                         ${
-                            // Show source title
-                            // or source name
-//noopener means New tab, don't get control over the original tab and noreferrer means Don't send the original page's URL as the referrer to the new website.
-                            source.title ||
-                            source.name ||
-                            "BIS Document"
-                        }
+                    // Show source title
+                    // or source name
+                    //noopener means New tab, don't get control over the original tab and noreferrer means Don't send the original page's URL as the referrer to the new website.
+                    source.title ||
+                    source.name ||
+                    "BIS Document"
+                    }
 
                     </a>
 
@@ -1599,23 +1510,23 @@ function updateRightPanel(
                     <p>
 
                         ${
-                            // If clause exists,
-                            // show the clause number
+                    // If clause exists,
+                    // show the clause number
 
-                            source.clause
-                                ? `Clause ${source.clause} • `
-                                : ""
-                        }
+                    source.clause
+                        ? `Clause ${source.clause} • `
+                        : ""
+                    }
 
 
                         ${
-                            // If page exists,
-                            // show the page number
+                    // If page exists,
+                    // show the page number
 
-                            source.page
-                                ? `Page ${source.page}`
-                                : ""
-                        }
+                    source.page
+                        ? `Page ${source.page}`
+                        : ""
+                    }
 
                     </p>
 
@@ -1953,14 +1864,13 @@ standardsBtn.addEventListener(
 
                         <div class="answer">
 
-                            ${
-                                marked.parse(
-                                    getAnswer(
-                                        data,
-                                        "No standard found."
-                                    )
-                                )
-                            }
+                            ${marked.parse(
+                    getAnswer(
+                        data,
+                        "No standard found."
+                    )
+                )
+                    }
 
                         </div>
 
@@ -2436,4 +2346,10 @@ laboratoryBtn.addEventListener(
 //for collapse
 collapseBtn.addEventListener("click", function () {
     sidebar.classList.toggle("collapsed");
+});
+
+
+//for mobile
+mobileMenuBtn.addEventListener("click", function () {
+    sidebar.classList.toggle("mobile-open");
 });
