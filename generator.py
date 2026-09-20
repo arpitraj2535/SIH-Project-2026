@@ -256,6 +256,7 @@ ANSWER
             "standard": chunk["standard_id"],
             "clause": chunk["clause"],
             "page": chunk["page"],
+            "source_url": chunk.get("source_url", ""),
             "text": chunk["text"]
         }
         for chunk in chunks

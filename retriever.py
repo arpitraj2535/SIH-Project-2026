@@ -455,6 +455,7 @@ def retrieve(query: str, top_k: int = TOP_K):
             ),
             "page": page,
             "clause": clause,
+            "source_url": payload.get("source_url", ""),
             "score": score,
             "_boosted_score": boosted_score
         })

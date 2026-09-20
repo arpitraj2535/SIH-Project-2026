@@ -184,6 +184,7 @@ def chunk_page(
     page_num: int,
     doc_id: str,
     doc_title: str,
+    source_url: str,
 ):
     chunks = []
 
@@ -206,6 +207,7 @@ def chunk_page(
                 "doc_id": doc_id,
                 "doc_title": doc_title,
                 "standard_id": doc_id,
+                "source_url": source_url,
             })
 
         else:
@@ -223,6 +225,7 @@ def chunk_page(
                         "doc_id": doc_id,
                         "doc_title": doc_title,
                         "standard_id": doc_id,
+                        "source_url": source_url,
                     })
 
                 if end >= len(part):
@@ -475,6 +478,54 @@ def upload_and_verify(points):
             time.sleep(QDRANT_VERIFY_DELAY)
 
 # ============================================================
+# UPDATE EXISTING QDRANT PAYLOADS
+# ============================================================
+
+
+def update_existing_payloads(chunks):
+    """Update metadata only; vectors/embeddings are untouched."""
+    for start in range(0, len(chunks), 100):
+        batch = chunks[start:start + 100]
+
+        for attempt in range(1, QDRANT_MAX_RETRIES + 2):
+            try:
+                for chunk in batch:
+                    client.set_payload(
+                        collection_name=COLLECTION,
+                        payload={
+                            "source_url": chunk["source_url"],
+                            "doc_id": chunk["doc_id"],
+                            "doc_title": chunk["doc_title"],
+                            "standard_id": chunk["standard_id"],
+                            "page": chunk["page"],
+                            "clause": chunk["clause"],
+                        },
+                        points=[point_id_for_chunk(chunk)],
+                        wait=True,
+                        timeout=QDRANT_TIMEOUT,
+                    )
+
+                print(
+                    f"   Updated source metadata "
+                    f"{start + 1}-{start + len(batch)}/{len(chunks)}"
+                )
+                break
+
+            except Exception as exc:
+                if attempt > QDRANT_MAX_RETRIES:
+                    raise RuntimeError(
+                        "Qdrant metadata update failed after retries."
+                    ) from exc
+
+                print(
+                    f"   Qdrant metadata update failed "
+                    f"(attempt {attempt}/{QDRANT_MAX_RETRIES + 1})"
+                )
+                print(f"   Reason: {exc}")
+                time.sleep(QDRANT_RETRY_DELAY)
+
+
+# ============================================================
 # INGEST ONE PDF
 # ============================================================
 
@@ -483,6 +534,7 @@ def ingest_pdf(
     pdf_path: str,
     doc_id: str,
     doc_title: str,
+    source_url: str,
 ):
     print("\n" + "=" * 60)
     print(f"Processing: {pdf_path}")
@@ -500,6 +552,7 @@ def ingest_pdf(
                 page["page_num"],
                 doc_id,
                 doc_title,
+                source_url,
             )
         )
 
@@ -516,6 +569,20 @@ def ingest_pdf(
     ]
 
     found_ids = existing_point_ids(point_ids)
+
+    # Update existing points with source URLs WITHOUT re-embedding.
+    if found_ids:
+        existing_chunks = [
+            chunk
+            for chunk, point_id in zip(chunks, point_ids)
+            if point_id in found_ids
+        ]
+
+        print(
+            f"   Updating metadata for "
+            f"{len(existing_chunks)} existing Qdrant points..."
+        )
+        update_existing_payloads(existing_chunks)
 
     missing_chunks = [
         chunk
