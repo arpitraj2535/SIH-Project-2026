@@ -25,6 +25,7 @@ class SourceResponse(BaseModel):
     page: int
     clause: str
     score: float
+    source_url: str = ""
 
 
 class ChatResponse(BaseModel):
